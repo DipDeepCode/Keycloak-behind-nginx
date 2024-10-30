@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+
+  postgres:
+    image: postgres:16.2-alpine
+    container_name: postgres
+    restart: unless-stopped
+    env_file:
+      - postgres.env
+    environment:
+      - POSTGRES_DB=keycloak_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - net_1
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0.5
+    container_name: keycloak
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    env_file:
+      - keycloak.env
+    environment:
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres/keycloak_db
+    command:
+      - "start"
+      - "--hostname-strict=false"
+      - "--proxy-headers=xforwarded"
+      - "--http-enabled=true"
+      - "--http-relative-path=/keycloak"
+    depends_on:
+      - postgres
+    networks:
+      - net_1
+
+  pgadmin:
+    image: dpage/pgadmin4:8.12
+    container_name: pgadmin
+    restart: unless-stopped
+    env_file:
+      - pgadmin.env
+    environment:
+      - SCRIPT_NAME=/pgadmin
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - net_1
+
+networks:
+  net_1:
+    name: net_1
+
+volumes:
+  postgres_data:
+    name: postgres_volume
+    driver: local
+  pgadmin_data:
+    name: pgadmin_volume
+    driver: local
