@@ -13,7 +13,22 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - net_1
+      - backend
+
+  pgadmin:
+    image: dpage/pgadmin4:8.12
+    container_name: pgadmin
+    restart: unless-stopped
+    env_file:
+      - pgadmin.env
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - backend
 
   keycloak:
     image: quay.io/keycloak/keycloak:25.0.5
@@ -28,35 +43,15 @@ services:
       - KC_DB_URL=jdbc:postgresql://postgres/keycloak_db
     command:
       - "start"
-      - "--hostname-strict=false"
-      - "--proxy-headers=xforwarded"
-      - "--http-enabled=true"
-      - "--http-relative-path=/keycloak"
     depends_on:
       - postgres
     networks:
-      - net_1
-
-  pgadmin:
-    image: dpage/pgadmin4:8.12
-    container_name: pgadmin
-    restart: unless-stopped
-    env_file:
-      - pgadmin.env
-    environment:
-      - SCRIPT_NAME=/pgadmin
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    depends_on:
-      - postgres
-    networks:
-      - net_1
+      - backend
 
 networks:
-  net_1:
-    name: net_1
+  backend:
+    name: backend
+    driver: bridge
 
 volumes:
   postgres_data:
